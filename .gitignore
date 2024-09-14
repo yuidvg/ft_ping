@@ -1,0 +1,5 @@
+*.o
+ft_ping
+*.out
+# macOS
+.DS_Store
