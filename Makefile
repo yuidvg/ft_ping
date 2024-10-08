@@ -7,6 +7,8 @@ EXEC = ft_ping
 $(EXEC): $(OBJS)
 	$(CC) $(CFLAGS) -o $(EXEC) $(OBJS)
 
+all: $(EXEC)
+
 clean:
 	rm -f $(OBJS)
 

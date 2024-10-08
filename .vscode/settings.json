@@ -1,0 +1,18 @@
+{
+	"C_Cpp.default.compilerPath": "/usr/bin/clang",
+	"files.associations": {
+		"all.h": "c",
+		"external.h": "c",
+		"types.h": "c",
+		"prototypes.h": "c",
+		"inet.h": "c",
+		"socket.h": "c",
+		"ip_icmp.h": "c",
+		"stdint.h": "c",
+		"unistd.h": "c",
+		"stdlib.h": "c",
+		"time.h": "c",
+		"signal.h": "c",
+		"errno.h": "c"
+	}
+}
