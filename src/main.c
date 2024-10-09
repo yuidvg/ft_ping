@@ -11,9 +11,10 @@ int main(int ac, char *av[])
 		int sequenceNumber = 0;
 		while (1)
 		{
-			//Send ICMP Echo Request
-			const IcmpEchoRequest request = constructIcmpEchoRequest(getpid(), sequenceNumber);
 			// Create raw socket
+			int rawSockfd = createRawSocketOrExitFailure();
+			
+			//Send ICMP Echo Request
 			const IcmpEchoHeader icmpEchoHeader = constructIcmpEchoHeader(getpid(), sequenceNumber);
 
 			// Destination address
@@ -22,18 +23,10 @@ int main(int ac, char *av[])
 			dest_addr.sin_family = AF_INET;
 			dest_addr.sin_addr.s_addr = inet_addr(av[1]);
 
-			// ICMP header
-			struct icmphdr icmp_hdr;
-			memset(&icmp_hdr, 0, sizeof(icmp_hdr));
-			icmp_hdr.type = ICMP_ECHO;
-			icmp_hdr.un.echo.id = getpid();
-			icmp_hdr.un.echo.sequence = sequenceNumber;
-			icmp_hdr.checksum = calculate_checksum(&icmp_hdr, sizeof(icmp_hdr));
-
 			// Send ICMP packet
 			if (sendto(rawSockfd, &icmpEchoHeader, sizeof(icmpEchoHeader), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0) {
 				perror("sendto");
-				close(sockfd);
+				close(rawSockfd);
 				exit(EXIT_FAILURE);
 			}
 			//Recive ICMP Echo Reply and Print (Maybe Somewhere Else Like in A Handler)
