@@ -1,8 +1,8 @@
 #include "../include/all.h"
 
-IcmpEchoRequest constructIcmpEchoRequest(uint16_t id, uint16_t sequenceNumber)
+IcmpEchoHeader constructIcmpEchoHeader(uint16_t id, uint16_t sequenceNumber)
 {
-    IcmpEchoRequest icmpEchoRequest;
+    IcmpEchoHeader icmpEchoRequest;
     icmpEchoRequest.type = 8;
     icmpEchoRequest.code = 0;
     icmpEchoRequest.checksum = 0;

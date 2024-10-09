@@ -14,11 +14,7 @@ int main(int ac, char *av[])
 			//Send ICMP Echo Request
 			const IcmpEchoRequest request = constructIcmpEchoRequest(getpid(), sequenceNumber);
 			// Create raw socket
-			int sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-			if (sockfd < 0) {
-				perror("socket");
-				exit(EXIT_FAILURE);
-			}
+			const IcmpEchoHeader icmpEchoHeader = constructIcmpEchoHeader(getpid(), sequenceNumber);
 
 			// Destination address
 			struct sockaddr_in dest_addr;
@@ -35,7 +31,7 @@ int main(int ac, char *av[])
 			icmp_hdr.checksum = calculate_checksum(&icmp_hdr, sizeof(icmp_hdr));
 
 			// Send ICMP packet
-			if (sendto(sockfd, &icmp_hdr, sizeof(icmp_hdr), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0) {
+			if (sendto(rawSockfd, &icmpEchoHeader, sizeof(icmpEchoHeader), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0) {
 				perror("sendto");
 				close(sockfd);
 				exit(EXIT_FAILURE);
