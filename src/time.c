@@ -1,14 +1,20 @@
 #include "../include/all.h"
 
-struct timeval time_diff(struct timeval *start, struct timeval *end)
+struct timeval timeDifference(const struct timeval *start, const struct timeval *end)
 {
-    struct timeval diff;
-    diff.tv_sec = end->tv_sec - start->tv_sec;
-    diff.tv_usec = end->tv_usec - start->tv_usec;
-    if (diff.tv_usec < 0)
-    {
-        diff.tv_sec -= 1;
-        diff.tv_usec += 1000000;
-    }
-    return diff;
+    struct timeval result;
+    timersub(end, start, &result);
+    return result;
+}
+
+double_t timeValInMiliseconds(const struct timeval *timeVal)
+{
+    return timeVal->tv_sec * 1000.0 + timeVal->tv_usec / 1000.0;
+}
+
+struct timeval timeOfDay()
+{
+    struct timeval time;
+    gettimeofday(&time, NULL);
+    return time;
 }

@@ -9,29 +9,25 @@ int main(int ac, char *av[])
     else if (ac == 2)
     {
         // Create raw socket
-        int rawSockfd = createRawSocketOrExitFailure();
+        const int rawSockfd = createRawSocketOrExitFailure();
+        const struct sockaddr_in remoteAddress = constructIpHeader(av[1]);
 
         int sequenceNumber = 0;
         while (1)
         {
             // Send ICMP Echo Request
-            const IcmpEchoHeader icmpEchoHeader = constructIcmpEchoHeader(getpid(), sequenceNumber);
+            const IcmpEchoRequest icmpEchoRequest = constructIcmpEchoRequest(getpid(), sequenceNumber);
 
-            // Destination address
-            struct sockaddr_in dest_addr;
-            memset(&dest_addr, 0, sizeof(dest_addr));
-            dest_addr.sin_family = AF_INET;
-            dest_addr.sin_addr.s_addr = inet_addr(av[1]);
+            sendIcmpEchoRequest(rawSockfd, &icmpEchoRequest, &remoteAddress);
 
-            // Send ICMP packet
-            if (sendto(rawSockfd, &icmpEchoHeader, sizeof(icmpEchoHeader), 0, (struct sockaddr *)&dest_addr,
-                       sizeof(dest_addr)) <= 0)
-            {
-                perror("sendto");
-                close(rawSockfd);
-                exit(EXIT_FAILURE);
-            }
             // Recive ICMP Echo Reply and Print (Maybe Somewhere Else Like in A Handler)
+            const IcmpEchoReply icmpEchoReply = receiveIcmpEchoReply(rawSockfd, &remoteAddress);
+            printf("%lu bytes from %s: icmp_seq=%u ttl=%d time=%.2f ms\n",
+                   sizeof(IcmpEchoReply),
+                   inet_ntoa(remoteAddress.sin_addr),
+                   icmpEchoReply.icmpHeader.sequence,
+                   icmpEchoReply.ipHeader.ttl,
+                   timeValInMiliseconds(&timeDifference(&icmpEchoReply.timeReceived, &icmpEchoReply.icmpHeader)));
             ++sequenceNumber;
         }
     }
