@@ -20,14 +20,16 @@ int main(int ac, char *av[])
 
             sendIcmpEchoRequest(rawSockfd, &icmpEchoRequest, &remoteAddress);
 
-            // Recive ICMP Echo Reply and Print (Maybe Somewhere Else Like in A Handler)
+            // Receive ICMP Echo Reply and Print (Maybe Somewhere Else Like in A Handler)
             const IcmpEchoReply icmpEchoReply = receiveIcmpEchoReply(rawSockfd, &remoteAddress);
+
+            struct timeval timeDiff = timeDifference(&icmpEchoReply.timeReceived, &icmpEchoReply.timeSent);
             printf("%lu bytes from %s: icmp_seq=%u ttl=%d time=%.2f ms\n",
                    sizeof(IcmpEchoReply),
                    inet_ntoa(remoteAddress.sin_addr),
                    icmpEchoReply.icmpHeader.un.echo.sequence,
                    icmpEchoReply.ipHeader.ttl,
-                   timeValInMiliseconds(&timeDifference(&icmpEchoReply.timeReceived, &icmpEchoReply.timeSent)));
+                   timeValInMiliseconds(&timeDiff));
             ++sequenceNumber;
         }
     }

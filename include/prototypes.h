@@ -3,6 +3,7 @@
 #include "types.h"
 
 IcmpEchoRequest constructIcmpEchoRequest(uint16_t id, uint16_t sequenceNumber);
+int createRawSocketOrExitFailure();
 uint16_t calculateChecksum(void *data, int length);
 struct timeval timeDifference(const struct timeval *start, const struct timeval *end);
 double_t timeValInMiliseconds(const struct timeval *timeVal);
