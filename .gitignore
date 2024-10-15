@@ -1,5 +1,9 @@
 *.o
 ft_ping
 *.out
+obj/**
+obj_debug/**
+*.d
 # macOS
 .DS_Store
+*.dSYM
