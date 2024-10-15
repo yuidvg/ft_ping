@@ -25,7 +25,7 @@ void sendIcmpEchoRequest(int rawSockfd, const IcmpEchoRequest *icmpEchoRequest, 
     }
 }
 
-struct IcmpEchoReply receiveIcmpEchoReply(int rawSockfd, const struct sockaddr_in *remoteAddress)
+IcmpEchoReply receiveIcmpEchoReply(int rawSockfd, const struct sockaddr_in *remoteAddress)
 {
     char buffer[1024];
     socklen_t addr_len = sizeof(*remoteAddress);
@@ -56,5 +56,5 @@ struct IcmpEchoReply receiveIcmpEchoReply(int rawSockfd, const struct sockaddr_i
         icmpEchoReply.timeSent = timeSent;
         return icmpEchoReply;
     }
-    return (struct IcmpEchoReply){0};
+    return (IcmpEchoReply){0};
 }
