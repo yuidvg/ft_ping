@@ -8,17 +8,75 @@ static void setCatchedSigint(const int sig)
     catchedSigint = 1;
 }
 
-static void printConclusion(const size_t packetsTransmitted, const size_t packetsReceived, const Stats stats)
+static void printConclusion(const char *hostname, const size_t packetsTransmitted, const size_t packetsReceived,
+                            const Stats stats)
 {
     const double_t packetLoss =
         packetsTransmitted ? (packetsTransmitted - packetsReceived) / (double)packetsTransmitted * 100.0 : 0.0;
     const double_t stddev = stats.n > 1 ? sqrt(stats.M2 / (stats.n - 1)) : 0;
-    printf("\n--- ping statistics ---\n"
+    printf("--- %s ping statistics ---\n"
            "%zu packets transmitted, %zu packets received, %.0f%% packet loss\n"
            "round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n",
-           packetsTransmitted, packetsReceived, packetLoss, stats.min, stats.mean, stats.max, stddev);
+           hostname, packetsTransmitted, packetsReceived, packetLoss, stats.min, stats.mean, stats.max, stddev);
 
     exit(0);
+}
+
+static Arguments parseArguments(const int ac, char *av[])
+{
+    Arguments arguments = {false, false, 225, NULL}; // Default values
+    int opt;
+    struct option longOptions[] = {
+        {"verbose", no_argument, NULL, 'v'},
+        {"help", no_argument, NULL, '?'},
+        {"ttl", required_argument, NULL, 't'},
+        {NULL, 0, NULL, 0}
+    };
+    while ((opt = getopt_long(ac, av, "v?", longOptions, &optind)) != -1)
+    {
+        switch (opt)
+        {
+        case 'v':
+            arguments.verbose = true;
+            break;
+        case '?':
+            arguments.help = true;
+            break;
+        default:
+            fprintf(stderr, "Usage: %s [-v] [-?] [--ttl ttl_value] hostname\n", av[0]);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Check for --ttl option
+    for (int i = optind; i < ac; i++)
+    {
+        if (strcmp(av[i], "--ttl") == 0)
+        {
+            if (i + 1 < ac)
+            {
+                arguments.ttl = atoi(av[i + 1]);
+                i++; // Skip the ttl value
+            }
+            else
+            {
+                fprintf(stderr, "Usage: %s [-v] [-?] [--ttl ttl_value] hostname\n", av[0]);
+                exit(EXIT_FAILURE);
+            }
+        }
+        else
+        {
+            arguments.hostname = av[i];
+        }
+    }
+
+    if (arguments.hostname == NULL)
+    {
+        fprintf(stderr, "Usage: %s [-v] [-?] [--ttl ttl_value] hostname\n", av[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    return arguments;
 }
 
 int main(int ac, char *av[])
@@ -28,16 +86,18 @@ int main(int ac, char *av[])
         printf("ping: missing host operand\nTry 'ping --help' or 'ping --usage' for more information.\n");
         exit(64);
     }
-    else if (ac == 2)
+    else if (ac >= 2)
     {
+        Arguments arguments = parseArguments(ac, av);
+        const char *hostname = arguments.hostname;
         signal(SIGINT, setCatchedSigint);
         // Create raw socket
         const int rawSockfd = createRawSocketOrExitFailure();
-        const struct sockaddr_in remoteAddress = constructIpHeader(av[1]);
+        const struct sockaddr_in remoteAddress = resolveHostname(hostname);
 
         size_t sequenceNumber = 0;
         Stats stats = {0, 0, 0, INFINITY, 0};
-        printf("PING %s (%s): %zu data bytes\n", av[1], av[1], sizeof(((IcmpEchoRequest *)0)->data) * BYTE);
+        printf("PING %s (%s): %zu data bytes\n", hostname, hostname, sizeof(((IcmpEchoRequest *)0)->data) * BYTE);
         while (!catchedSigint)
         {
             // Send ICMP Echo Request
@@ -67,6 +127,6 @@ int main(int ac, char *av[])
         }
         const size_t packetsTransmitted = sequenceNumber;
         const size_t packetsReceived = stats.n;
-        printConclusion(packetsTransmitted, packetsReceived, stats);
+        printConclusion(hostname, packetsTransmitted, packetsReceived, stats);
     }
 }

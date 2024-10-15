@@ -10,6 +10,9 @@
             "request": "launch",
             "program": "${workspaceFolder}/ft_ping_debug.out",
             "args": [
+                "-v",
+                "--ttl",
+                "225",
                 "8.8.8.8"
             ],
             "stopAtEntry": false,

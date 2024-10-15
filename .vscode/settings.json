@@ -16,7 +16,12 @@
 		"errno.h": "c",
 		"ip.h": "c",
 		"stdio.h": "c",
-		"math.h": "c"
+		"math.h": "c",
+		"string.h": "c",
+		"fcntl.h": "c",
+		"netdb.h": "c",
+		"values.h": "c",
+		"stdbool.h": "c"
 	},
-	"makefile.configureOnOpen": false
+	"makefile.configureOnOpen": false,
 }

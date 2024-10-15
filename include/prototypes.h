@@ -12,3 +12,4 @@ void sendIcmpEchoRequest(int rawSockfd, const IcmpEchoRequest *icmpEchoRequest,
                          const struct sockaddr_in *remoteAddress);
 IcmpEchoReply receiveIcmpEchoReply(int rawSockfd, const struct sockaddr_in *remoteAddress);
 struct timeval timeOfDay();
+struct sockaddr_in resolveHostname(const char *hostname);

@@ -29,3 +29,11 @@ typedef struct
     double_t min;
     double_t max;
 } Stats;
+
+typedef struct
+{
+    bool help;      // -? option for help
+    bool verbose;   // -v option for verbose output
+    size_t ttl;     // --ttl option for time to live
+    char *hostname; // Hostname to ping
+} Arguments;
