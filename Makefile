@@ -2,6 +2,7 @@ CC = cc
 
 EXEC = ft_ping
 CFLAGS = -Wall -Werror -Wextra -I include/
+CLIBS = -lm
 SRCS_DIR=src/
 SRCS = $(wildcard $(SRCS_DIR)*.c)
 OBJS_DIR=obj/
@@ -15,10 +16,10 @@ DEBUG_OBJS = $(SRCS:$(SRCS_DIR)%.c=$(DEBUG_OBJS_DIR)%.o)
 all: $(EXEC)
 
 $(EXEC): $(OBJS)
-	$(CC) $(CFLAGS) -o $(EXEC) $(OBJS)
+	$(CC) $(CFLAGS) -o $(EXEC) $(OBJS) $(CLIBS)
 
 $(OBJS_DIR)%.o: $(SRCS_DIR)%.c | $(OBJS_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@ $(CLIBS)
 
 $(OBJS_DIR):
 	mkdir -p $(OBJS_DIR)
@@ -26,10 +27,10 @@ $(OBJS_DIR):
 debug: $(DEBUG_EXEC)
 
 $(DEBUG_EXEC): $(DEBUG_OBJS)
-	$(CC) $(CFLAGS) $(DEBUG_CFLAGS) -o $(DEBUG_EXEC) $(DEBUG_OBJS)
+	$(CC) $(CFLAGS) $(DEBUG_CFLAGS) -o $(DEBUG_EXEC) $(DEBUG_OBJS) $(CLIBS)
 
 $(DEBUG_OBJS_DIR)%.o: $(SRCS_DIR)%.c | $(DEBUG_OBJS_DIR)
-	$(CC) $(CFLAGS) $(DEBUG_CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(DEBUG_CFLAGS) -c $< -o $@ $(CLIBS)
 
 $(DEBUG_OBJS_DIR):
 	mkdir -p $(DEBUG_OBJS_DIR)
