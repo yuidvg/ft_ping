@@ -14,7 +14,7 @@ static void printConclusion(const char *hostname, const size_t packetsTransmitte
     const double_t packetLoss =
         packetsTransmitted ? (packetsTransmitted - packetsReceived) / (double)packetsTransmitted * 100.0 : 0.0;
     const double_t stddev = stats.n > 1 ? sqrt(stats.M2 / (stats.n - 1)) : 0;
-    printf("--- %s ping statistics ---\n"
+    printf("--- %s ft_ping statistics ---\n"
            "%zu packets transmitted, %zu packets received, %.0f%% packet loss\n"
            "round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n",
            hostname, packetsTransmitted, packetsReceived, packetLoss, stats.min, stats.mean, stats.max, stddev);
@@ -26,12 +26,7 @@ static Arguments parseArguments(const int ac, char *av[])
 {
     Arguments arguments = {false, false, 225, NULL}; // Default values
     int opt;
-    struct option longOptions[] = {
-        {"verbose", no_argument, NULL, 'v'},
-        {"help", no_argument, NULL, '?'},
-        {"ttl", required_argument, NULL, 't'},
-        {NULL, 0, NULL, 0}
-    };
+    const struct option longOptions[] = {{"ttl", required_argument, NULL, 't'}, {NULL, 0, NULL, 0}};
     while ((opt = getopt_long(ac, av, "v?", longOptions, &optind)) != -1)
     {
         switch (opt)
@@ -40,40 +35,28 @@ static Arguments parseArguments(const int ac, char *av[])
             arguments.verbose = true;
             break;
         case '?':
-            arguments.help = true;
+            printf("Usage: ft_ping [OPTION...] HOST ...\n"
+                   "Send ICMP ECHO_REQUEST packets to network hosts.\n\n"
+                   "Options:\n"
+                   "  -ttl=N\tspecify N as time-to-live\n"
+                   "  -v\t\tverbose output\n"
+                   "  -?\t\tgive this help list\n");
+            exit(EX_OK);
+        case 't':
+            arguments.ttl = atoi(optarg);
             break;
         default:
-            fprintf(stderr, "Usage: %s [-v] [-?] [--ttl ttl_value] hostname\n", av[0]);
-            exit(EXIT_FAILURE);
+            fprintf(stderr, "ft_ping: invalid option -- '%c'\nTry 'ft_ping -?' for more information.\n", optopt);
+            exit(EX_USAGE);
         }
     }
 
-    // Check for --ttl option
-    for (int i = optind; i < ac; i++)
-    {
-        if (strcmp(av[i], "--ttl") == 0)
-        {
-            if (i + 1 < ac)
-            {
-                arguments.ttl = atoi(av[i + 1]);
-                i++; // Skip the ttl value
-            }
-            else
-            {
-                fprintf(stderr, "Usage: %s [-v] [-?] [--ttl ttl_value] hostname\n", av[0]);
-                exit(EXIT_FAILURE);
-            }
-        }
-        else
-        {
-            arguments.hostname = av[i];
-        }
-    }
+    arguments.hostname = av[optind];
 
     if (arguments.hostname == NULL)
     {
-        fprintf(stderr, "Usage: %s [-v] [-?] [--ttl ttl_value] hostname\n", av[0]);
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "ft_ping: missing host operand\nTry 'ft_ping -?' for more information.\n");
+        exit(EX_USAGE);
     }
 
     return arguments;
@@ -83,24 +66,24 @@ int main(int ac, char *av[])
 {
     if (ac == 1)
     {
-        printf("ping: missing host operand\nTry 'ping --help' or 'ping --usage' for more information.\n");
-        exit(64);
+        printf("ft_ping: missing host operand\nTry 'ft_ping -?' for more information.\n");
+        exit(EX_USAGE);
     }
     else if (ac >= 2)
     {
         Arguments arguments = parseArguments(ac, av);
-        const char *hostname = arguments.hostname;
+
         signal(SIGINT, setCatchedSigint);
-        // Create raw socket
+
         const int rawSockfd = createRawSocketOrExitFailure();
-        const struct sockaddr_in remoteAddress = resolveHostname(hostname);
+        const struct sockaddr_in remoteAddress = resolveHostname(arguments.hostname);
 
         size_t sequenceNumber = 0;
         Stats stats = {0, 0, 0, INFINITY, 0};
-        printf("PING %s (%s): %zu data bytes\n", hostname, hostname, sizeof(((IcmpEchoRequest *)0)->data) * BYTE);
+        printf("ft_ping %s (%s): %zu data bytes\n", arguments.hostname, arguments.hostname,
+               sizeof(((IcmpEchoRequest *)0)->data) * BYTE);
         while (!catchedSigint)
         {
-            // Send ICMP Echo Request
             const IcmpEchoRequest icmpEchoRequest = constructIcmpEchoRequest(getpid(), sequenceNumber);
             sendIcmpEchoRequest(rawSockfd, &icmpEchoRequest, &remoteAddress);                    // -->
             const IcmpEchoReply icmpEchoReply = receiveIcmpEchoReply(rawSockfd, &remoteAddress); // <--
@@ -127,6 +110,6 @@ int main(int ac, char *av[])
         }
         const size_t packetsTransmitted = sequenceNumber;
         const size_t packetsReceived = stats.n;
-        printConclusion(hostname, packetsTransmitted, packetsReceived, stats);
+        printConclusion(arguments.hostname, packetsTransmitted, packetsReceived, stats);
     }
 }

@@ -21,7 +21,10 @@
 		"fcntl.h": "c",
 		"netdb.h": "c",
 		"values.h": "c",
-		"stdbool.h": "c"
+		"stdbool.h": "c",
+		"getopt.h": "c",
+		"in.h": "c",
+		"sysexits.h": "c"
 	},
 	"makefile.configureOnOpen": false,
 }
