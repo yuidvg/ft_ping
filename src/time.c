@@ -3,7 +3,7 @@
 struct timeval timeDifference(const struct timeval *start, const struct timeval *end)
 {
     struct timeval result;
-    timersub(end, start, &result);
+    timersub(start, end, &result);
     return result;
 }
 

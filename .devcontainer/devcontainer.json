@@ -13,11 +13,17 @@
 		"vscode": {
 			"extensions": [
 				"ms-vscode.cpptools",
-				"github.copilot",
-				"github.copilot-chat"
+				"github.copilot"
+			]
+		},
+		"cursor": {
+			"extensions": [
+				"ms-vscode.cpptools",
+				"github.copilot"
 			]
 		}
-	}
+	},
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+	"remoteUser": "root",
+	"postCreateCommand": "apt update && apt install -y inetutils-ping gdb"
 }

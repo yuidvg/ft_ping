@@ -1,0 +1,21 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "remake debug",
+            "command": "make fclean && make -j debug",
+            "type": "shell",
+            "args": [],
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": "build",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        }
+    ]
+}

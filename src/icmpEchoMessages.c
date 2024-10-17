@@ -8,7 +8,8 @@ IcmpEchoRequest constructIcmpEchoRequest(uint16_t id, uint16_t sequenceNumber)
     icmpEchoRequest.checksum = 0;
     icmpEchoRequest.identifier = id;
     icmpEchoRequest.sequence = sequenceNumber;
-    icmpEchoRequest.data = 0;
+    const struct timeval timeSent = timeOfDay();
+    icmpEchoRequest.data = ((uint64_t)timeSent.tv_sec << 32) | (uint64_t)timeSent.tv_usec;
     icmpEchoRequest.checksum = calculateChecksum(&icmpEchoRequest, sizeof(icmpEchoRequest));
     return icmpEchoRequest;
 }
@@ -24,28 +25,36 @@ void sendIcmpEchoRequest(int rawSockfd, const IcmpEchoRequest *icmpEchoRequest, 
     }
 }
 
-struct IcmpEchoReply receiveIcmpEchoReply(int rawSockfd, const struct sockaddr_in *remoteAddress)
+IcmpEchoReply receiveIcmpEchoReply(int rawSockfd, const struct sockaddr_in *remoteAddress)
 {
     char buffer[1024];
-    ssize_t bytes_received = recvfrom(rawSockfd, buffer, sizeof(buffer), 0,
-                                  (struct sockaddr *)remoteAddress, sizeof(*remoteAddress));
-    if (bytes_received < 0) {
+    socklen_t addr_len = sizeof(*remoteAddress);
+    ssize_t bytes_received =
+        recvfrom(rawSockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)remoteAddress, &addr_len);
+    if (bytes_received < 0)
+    {
         perror("Recvfrom failed");
         exit(EXIT_FAILURE);
     }
 
     const struct timeval timeReceived = timeOfDay();
 
+    // Parse buffer to IP Header, ICMP Header and Time Sent
     const struct iphdr *ipHeader = (struct iphdr *)buffer;
     const struct icmphdr *icmpHeader = (struct icmphdr *)(buffer + (ipHeader->ihl * 4));
+    uint64_t data = *(uint64_t *)(buffer + sizeof(struct iphdr) + sizeof(struct icmphdr));
+    struct timeval timeSent;
+    timeSent.tv_sec = (time_t)(data >> 32);
+    timeSent.tv_usec = (suseconds_t)(data & 0xFFFFFFFF);
 
     if (icmpHeader->type == ICMP_ECHOREPLY)
     {
         IcmpEchoReply icmpEchoReply;
+        icmpEchoReply.timeReceived = timeReceived;
         icmpEchoReply.ipHeader = *ipHeader;
         icmpEchoReply.icmpHeader = *icmpHeader;
-        icmpEchoReply.timeReceived = timeReceived;
+        icmpEchoReply.timeSent = timeSent;
         return icmpEchoReply;
     }
-    return (struct IcmpEchoReply) {0};
+    return (IcmpEchoReply){0};
 }
