@@ -25,7 +25,7 @@ int main(int ac, char *av[])
             printf("%lu bytes from %s: icmp_seq=%u ttl=%d time=%.2f ms\n",
                    sizeof(IcmpEchoReply),
                    inet_ntoa(remoteAddress.sin_addr),
-                   icmpEchoReply.icmpHeader.sequence,
+                   icmpEchoReply.icmpHeader.,
                    icmpEchoReply.ipHeader.ttl,
                    timeValInMiliseconds(&timeDifference(&icmpEchoReply.timeReceived, &icmpEchoReply.icmpHeader)));
             ++sequenceNumber;
