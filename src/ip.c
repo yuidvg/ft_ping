@@ -31,3 +31,10 @@ struct sockaddr_in resolveHostname(const char *hostname)
     freeaddrinfo(res);
     return addr;
 }
+
+char *byteAddressToString(uint32_t address, char *buffer)
+{
+    inet_ntop(AF_INET, &address, buffer, INET_ADDRSTRLEN);
+
+    return buffer;
+}

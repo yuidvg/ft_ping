@@ -24,7 +24,7 @@ static void printConclusion(const char *hostname, const size_t packetsTransmitte
 
 static Arguments parseArguments(const int ac, char *av[])
 {
-    Arguments arguments = {false, false, 225, NULL}; // Default values
+    Arguments arguments = {false, false, DEFAULT_TTL, NULL}; // Default values
     int opt;
     const struct option longOptions[] = {{"ttl", required_argument, NULL, 't'}, {NULL, 0, NULL, 0}};
     while ((opt = getopt_long(ac, av, "v?", longOptions, &optind)) != -1)
@@ -78,10 +78,19 @@ int main(int ac, char *av[])
         const int rawSockfd = createRawSocketOrExitFailure();
         const struct sockaddr_in remoteAddress = resolveHostname(arguments.hostname);
 
+        // Set the TTL for the socket
+        if (setsockopt(rawSockfd, IPPROTO_IP, IP_TTL, &arguments.ttl, sizeof(arguments.ttl)) < 0)
+        {
+            perror("setsockopt");
+            close(rawSockfd);
+            exit(EXIT_FAILURE);
+        }
+
         size_t sequenceNumber = 0;
         Stats stats = {0, 0, 0, INFINITY, 0};
         printf("ft_ping %s (%s): %zu data bytes\n", arguments.hostname, arguments.hostname,
                sizeof(((IcmpEchoRequest *)0)->data) * BYTE);
+
         while (!catchedSigint)
         {
             const IcmpEchoRequest icmpEchoRequest = constructIcmpEchoRequest(getpid(), sequenceNumber);
@@ -90,21 +99,12 @@ int main(int ac, char *av[])
 
             struct timeval timeDiff = timeDifference(&icmpEchoReply.timeReceived, &icmpEchoReply.timeSent);
             const double_t rtt = timeValInMiliseconds(&timeDiff);
+            stats = getUpdatedStats(stats, rtt);
 
-            // Welford's online algorithm
-            stats.n = stats.n + 1;
-            const double_t deltaFromOldMean = rtt - stats.mean;
-            stats.mean = stats.mean + deltaFromOldMean / stats.n;
-            const double_t deltaFromNewMean = rtt - stats.mean;
-            stats.M2 = stats.M2 + deltaFromOldMean * deltaFromNewMean;
-
-            stats.min = (rtt < stats.min) ? rtt : stats.min;
-            stats.max = (rtt > stats.max) ? rtt : stats.max;
-
+            char ip_str[INET_ADDRSTRLEN];
             printf("%lu bytes from %s: icmp_seq=%u ttl=%d time=%.3f ms\n", sizeof(IcmpEchoReply),
-                   inet_ntoa(remoteAddress.sin_addr), icmpEchoReply.icmpHeader.un.echo.sequence,
+                   byteAddressToString(icmpEchoReply.ipHeader.saddr, ip_str), icmpEchoReply.icmpHeader.un.echo.sequence,
                    icmpEchoReply.ipHeader.ttl, rtt);
-
             ++sequenceNumber;
             sleep(1);
         }

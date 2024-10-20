@@ -13,3 +13,6 @@ void sendIcmpEchoRequest(int rawSockfd, const IcmpEchoRequest *icmpEchoRequest,
 IcmpEchoReply receiveIcmpEchoReply(int rawSockfd, const struct sockaddr_in *remoteAddress);
 struct timeval timeOfDay();
 struct sockaddr_in resolveHostname(const char *hostname);
+
+Stats getUpdatedStats(Stats stats, const double_t rtt);
+char *byteAddressToString(uint32_t address, char *buffer);
