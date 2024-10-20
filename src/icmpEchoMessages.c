@@ -8,8 +8,7 @@ IcmpEchoRequest constructIcmpEchoRequest(uint16_t id, uint16_t sequenceNumber)
     icmpEchoRequest.checksum = 0;
     icmpEchoRequest.identifier = id;
     icmpEchoRequest.sequence = sequenceNumber;
-    const struct timeval timeSent = timeOfDay();
-    icmpEchoRequest.data = ((uint64_t)timeSent.tv_sec << 32) | (uint64_t)timeSent.tv_usec;
+    icmpEchoRequest.data = serializeTimeval(timeOfDay());
     icmpEchoRequest.checksum = calculateChecksum(&icmpEchoRequest, sizeof(icmpEchoRequest));
     return icmpEchoRequest;
 }
