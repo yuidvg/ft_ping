@@ -88,23 +88,28 @@ int main(int ac, char *av[])
 
         size_t sequenceNumber = 0;
         Stats stats = {0, 0, 0, INFINITY, 0};
-        printf("ft_ping %s (%s): %zu data bytes\n", arguments.hostname, arguments.hostname,
-               sizeof(((IcmpEchoRequest *)0)->data) * BYTE);
+        printf("PING %s (%s): %zu data bytes\n", arguments.hostname, inet_ntoa(remoteAddress.sin_addr),
+               sizeof(((IcmpEchoRequest *)0)->data));
 
         while (!catchedSigint)
         {
             const IcmpEchoRequest icmpEchoRequest = constructIcmpEchoRequest(getpid(), sequenceNumber);
-            sendIcmpEchoRequest(rawSockfd, &icmpEchoRequest, &remoteAddress);                    // -->
-            const IcmpEchoReply icmpEchoReply = receiveIcmpEchoReply(rawSockfd, &remoteAddress); // <--
-
-            struct timeval timeDiff = timeDifference(&icmpEchoReply.timeReceived, &icmpEchoReply.timeSent);
-            const double_t rtt = timeValInMiliseconds(&timeDiff);
-            stats = getUpdatedStats(stats, rtt);
-
-            char ip_str[INET_ADDRSTRLEN];
-            printf("%lu bytes from %s: icmp_seq=%u ttl=%d time=%.3f ms\n", sizeof(IcmpEchoReply),
-                   byteAddressToString(icmpEchoReply.ipHeader.saddr, ip_str), icmpEchoReply.icmpHeader.un.echo.sequence,
-                   icmpEchoReply.ipHeader.ttl, rtt);
+            sendIcmpEchoRequest(rawSockfd, icmpEchoRequest, &remoteAddress);         // -->
+            const IcmpReply icmpReply = receiveIcmpReply(rawSockfd, &remoteAddress); // <--
+            if (icmpReply.icmpHeader.type == ICMP_ECHOREPLY)
+            {
+                stats = getUpdatedStats(stats, icmpReply.rtt);
+                printf("%lu bytes from ", icmpReply.bytesReceived);
+                printByteAddressToString(icmpReply.ipHeader.saddr);
+                printf(": icmp_seq=%u ttl=%d time=%.3f ms\n", icmpReply.icmpHeader.un.echo.sequence,
+                       icmpReply.ipHeader.ttl, icmpReply.rtt);
+            }
+            else if (arguments.verbose)
+            {
+                printf("%lu bytes from ", icmpReply.bytesReceived);
+                printByteAddressToString(icmpReply.ipHeader.saddr);
+                printf(": type=%u code=%u\n", icmpReply.icmpHeader.type, icmpReply.icmpHeader.code);
+            }
             ++sequenceNumber;
             sleep(1);
         }

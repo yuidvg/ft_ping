@@ -14,9 +14,9 @@ IcmpEchoRequest constructIcmpEchoRequest(uint16_t id, uint16_t sequenceNumber)
     return icmpEchoRequest;
 }
 
-void sendIcmpEchoRequest(int rawSockfd, const IcmpEchoRequest *icmpEchoRequest, const struct sockaddr_in *destAddress)
+void sendIcmpEchoRequest(int rawSockfd, const IcmpEchoRequest icmpEchoRequest, const struct sockaddr_in *destAddress)
 {
-    if (sendto(rawSockfd, icmpEchoRequest, sizeof(*icmpEchoRequest), 0, (struct sockaddr *)destAddress,
+    if (sendto(rawSockfd, &icmpEchoRequest, sizeof(icmpEchoRequest), 0, (struct sockaddr *)destAddress,
                sizeof(*destAddress)) <= 0)
     {
         perror("sendto");
@@ -25,36 +25,23 @@ void sendIcmpEchoRequest(int rawSockfd, const IcmpEchoRequest *icmpEchoRequest, 
     }
 }
 
-IcmpEchoReply receiveIcmpEchoReply(int rawSockfd, const struct sockaddr_in *remoteAddress)
+IcmpReply receiveIcmpReply(int rawSockfd, const struct sockaddr_in *remoteAddress)
 {
-    char buffer[1024];
-    socklen_t addr_len = sizeof(*remoteAddress);
-    ssize_t bytes_received =
-        recvfrom(rawSockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)remoteAddress, &addr_len);
-    if (bytes_received < 0)
-    {
-        perror("Recvfrom failed");
-        exit(EXIT_FAILURE);
-    }
+    IcmpReply icmpReply;
 
+    char buffer[IP_MAXPACKET];
+    icmpReply.bytesReceived =
+        recvfromOrExitFailure(rawSockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)remoteAddress);
     const struct timeval timeReceived = timeOfDay();
 
     // Parse buffer to IP Header, ICMP Header and Time Sent
-    const struct iphdr *ipHeader = (struct iphdr *)buffer;
-    const struct icmphdr *icmpHeader = (struct icmphdr *)(buffer + (ipHeader->ihl * 4));
-    uint64_t data = *(uint64_t *)(buffer + sizeof(struct iphdr) + sizeof(struct icmphdr));
-    struct timeval timeSent;
-    timeSent.tv_sec = (time_t)(data >> 32);
-    timeSent.tv_usec = (suseconds_t)(data & 0xFFFFFFFF);
+    icmpReply.ipHeader = *(struct iphdr *)buffer;
+    icmpReply.icmpHeader = *(struct icmphdr *)(buffer + (icmpReply.ipHeader.ihl * 4));
 
-    if (icmpHeader->type == ICMP_ECHOREPLY)
+    if (icmpReply.icmpHeader.type == ICMP_ECHOREPLY)
     {
-        IcmpEchoReply icmpEchoReply;
-        icmpEchoReply.timeReceived = timeReceived;
-        icmpEchoReply.ipHeader = *ipHeader;
-        icmpEchoReply.icmpHeader = *icmpHeader;
-        icmpEchoReply.timeSent = timeSent;
-        return icmpEchoReply;
+        uint64_t data = *(uint64_t *)(buffer + sizeof(struct iphdr) + sizeof(struct icmphdr));
+        icmpReply.rtt = timeValInMiliseconds(timeDifference(deserializeTimeval(data), timeReceived));
     }
-    return (IcmpEchoReply){0};
+    return icmpReply;
 }

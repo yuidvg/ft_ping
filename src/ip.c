@@ -32,9 +32,9 @@ struct sockaddr_in resolveHostname(const char *hostname)
     return addr;
 }
 
-char *byteAddressToString(uint32_t address, char *buffer)
+void printByteAddressToString(uint32_t address)
 {
+    char buffer[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &address, buffer, INET_ADDRSTRLEN);
-
-    return buffer;
+    printf("%s", buffer);
 }
