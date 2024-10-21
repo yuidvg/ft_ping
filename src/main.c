@@ -1,6 +1,6 @@
 #include "../include/all.h"
 
-static volatile sig_atomic_t catchedSigint = 0;
+volatile sig_atomic_t catchedSigint = 0;
 
 static void setCatchedSigint(const int sig)
 {
@@ -15,10 +15,10 @@ static void printConclusion(const char *hostname, const size_t packetsTransmitte
         packetsTransmitted ? (packetsTransmitted - packetsReceived) / (double)packetsTransmitted * 100.0 : 0.0;
     const double_t stddev = stats.n > 1 ? sqrt(stats.M2 / (stats.n - 1)) : 0;
     printf("--- %s ft_ping statistics ---\n"
-           "%zu packets transmitted, %zu packets received, %.0f%% packet loss\n"
-           "round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n",
-           hostname, packetsTransmitted, packetsReceived, packetLoss, stats.min, stats.mean, stats.max, stddev);
-
+           "%zu packets transmitted, %zu packets received, %.0f%% packet loss\n",
+           hostname, packetsTransmitted, packetsReceived, packetLoss);
+    if (packetsReceived > 0)
+        printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n", stats.min, stats.mean, stats.max, stddev);
     exit(0);
 }
 
@@ -64,16 +64,20 @@ static Arguments parseArguments(const int ac, char *av[])
 
 int main(int ac, char *av[])
 {
-    if (ac == 1)
-    {
-        printf("ft_ping: missing host operand\nTry 'ft_ping -?' for more information.\n");
-        exit(EX_USAGE);
-    }
-    else if (ac >= 2)
+    if (ac >= 2)
     {
         Arguments arguments = parseArguments(ac, av);
 
-        signal(SIGINT, setCatchedSigint);
+        struct sigaction sa;
+        memset(&sa, 0, sizeof(sa));
+        sa.sa_handler = setCatchedSigint;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = 0;
+        if (sigaction(SIGINT, &sa, NULL) == -1)
+        {
+            perror("sigaction");
+            exit(EXIT_FAILURE);
+        }
 
         const int rawSockfd = createRawSocketOrExitFailure();
         const struct sockaddr_in remoteAddress = resolveHostname(arguments.hostname);
@@ -89,32 +93,40 @@ int main(int ac, char *av[])
         size_t sequenceNumber = 0;
         Stats stats = {0, 0, 0, INFINITY, 0};
         printf("PING %s (%s): %zu data bytes\n", arguments.hostname, inet_ntoa(remoteAddress.sin_addr),
-               sizeof(((IcmpEchoRequest *)0)->data));
+               sizeof(((IcmpEchoRequest *)0)->timestampData) + sizeof(((IcmpEchoRequest *)0)->data));
 
         while (!catchedSigint)
         {
             const IcmpEchoRequest icmpEchoRequest = constructIcmpEchoRequest(getpid(), sequenceNumber);
-            sendIcmpEchoRequest(rawSockfd, icmpEchoRequest, &remoteAddress);         // -->
-            const IcmpReply icmpReply = receiveIcmpReply(rawSockfd, &remoteAddress); // <--
-            if (icmpReply.icmpHeader.type == ICMP_ECHOREPLY)
+            sendIcmpEchoRequest(rawSockfd, icmpEchoRequest, remoteAddress);         // -->
+            const IcmpReply icmpReply = receiveIcmpReply(rawSockfd, remoteAddress); // <--
+            if (!catchedSigint)
             {
-                stats = getUpdatedStats(stats, icmpReply.rtt);
-                printf("%lu bytes from ", icmpReply.bytesReceived);
-                printByteAddressToString(icmpReply.ipHeader.saddr);
-                printf(": icmp_seq=%u ttl=%d time=%.3f ms\n", icmpReply.icmpHeader.un.echo.sequence,
-                       icmpReply.ipHeader.ttl, icmpReply.rtt);
+                if (icmpReply.icmpHeader.type == ICMP_ECHOREPLY)
+                {
+                    stats = getUpdatedStats(stats, icmpReply.rtt);
+                    printf("%lu bytes from ", icmpReply.bytesReceived - sizeof(((IcmpReply *)0)->ipHeader));
+                    printByteAddressToString(icmpReply.ipHeader.saddr);
+                    printf(": icmp_seq=%u ttl=%d time=%.3f ms\n", icmpReply.icmpHeader.un.echo.sequence,
+                           icmpReply.ipHeader.ttl, icmpReply.rtt);
+                }
+                else if (arguments.verbose)
+                {
+                    printf("%lu bytes from ", icmpReply.bytesReceived - sizeof(((IcmpReply *)0)->ipHeader));
+                    printByteAddressToString(icmpReply.ipHeader.saddr);
+                    printf(": type=%u code=%u\n", icmpReply.icmpHeader.type, icmpReply.icmpHeader.code);
+                }
+                ++sequenceNumber;
+                sleep(1);
             }
-            else if (arguments.verbose)
-            {
-                printf("%lu bytes from ", icmpReply.bytesReceived);
-                printByteAddressToString(icmpReply.ipHeader.saddr);
-                printf(": type=%u code=%u\n", icmpReply.icmpHeader.type, icmpReply.icmpHeader.code);
-            }
-            ++sequenceNumber;
-            sleep(1);
         }
         const size_t packetsTransmitted = sequenceNumber;
         const size_t packetsReceived = stats.n;
         printConclusion(arguments.hostname, packetsTransmitted, packetsReceived, stats);
+    }
+    else if (ac == 1)
+    {
+        printf("ft_ping: missing host operand\nTry 'ft_ping -?' for more information.\n");
+        exit(EX_USAGE);
     }
 }

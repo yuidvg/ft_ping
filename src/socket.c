@@ -11,14 +11,17 @@ int createRawSocketOrExitFailure()
     return rawSockfd;
 }
 
-ssize_t recvfromOrExitFailure(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr)
+ssize_t recvfromOrExitFailure(int sockfd, void *buf, size_t len, int flags, const struct sockaddr_in src_addr)
 {
-    socklen_t addrlen = sizeof(*src_addr);                                         // Changed from pointer to value
-    ssize_t bytesReceived = recvfrom(sockfd, buf, len, flags, src_addr, &addrlen); // Pass the address of addrlen
-    if (bytesReceived < 0)
+    socklen_t addrlen = sizeof(src_addr);
+    ssize_t bytesReceived = recvfrom(sockfd, buf, len, flags, (struct sockaddr *)&src_addr, &addrlen);
+    if (bytesReceived > 0)
+        return bytesReceived;
+    else if (catchedSigint)
+        return -1;
+    else
     {
         perror("recvfrom");
         exit(EXIT_FAILURE);
     }
-    return bytesReceived;
 }

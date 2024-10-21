@@ -1,5 +1,8 @@
 {
-	"C_Cpp.default.compilerPath": "/usr/bin/clang",
+	"C_Cpp.default.compilerPath": "/usr/bin/cc",
+	"C_Cpp.default.defines": [
+		"_GNU_SOURCE"
+	],
 	"files.associations": {
 		"all.h": "c",
 		"external.h": "c",

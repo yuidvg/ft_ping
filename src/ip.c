@@ -22,8 +22,8 @@ struct sockaddr_in resolveHostname(const char *hostname)
 
     if ((errcode = getaddrinfo(hostname, NULL, &hints, &res)) != 0)
     {
-        fprintf(stderr, "getaddrinfoエラー: %s\n", gai_strerror(errcode));
-        return (struct sockaddr_in){0};
+        fprintf(stderr, "ft_ping: unknown host\n");
+        exit(EXIT_FAILURE);
     }
 
     struct sockaddr_in addr = *(struct sockaddr_in *)res->ai_addr;
