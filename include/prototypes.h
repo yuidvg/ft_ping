@@ -11,7 +11,7 @@ struct sockaddr_in constructIpHeader(const char *destinationIp);
 void sendIcmpEchoRequest(int rawSockfd, const IcmpEchoRequest icmpEchoRequest, struct sockaddr_in remoteAddress);
 IcmpReply receiveIcmpReply(int rawSockfd, const struct sockaddr_in remoteAddress);
 struct timeval timeOfDay();
-struct sockaddr_in resolveHostname(const char *hostname);
+struct sockaddr_in resolveHostnameOrExitFailure(const char *hostname);
 
 Stats getUpdatedStats(Stats stats, const double_t rtt);
 void printByteAddressToString(uint32_t address);

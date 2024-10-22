@@ -22,6 +22,20 @@ static void printConclusion(const char *hostname, const size_t packetsTransmitte
     exit(0);
 }
 
+static void setSignalHandlerOrExitFailure(void (*handler)(int))
+{
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    if (sigaction(SIGINT, &sa, NULL) == -1)
+    {
+        perror("sigaction");
+        exit(EXIT_FAILURE);
+    }
+}
+
 static Arguments parseArguments(const int ac, char *av[])
 {
     Arguments arguments = {false, false, DEFAULT_TTL, NULL}; // Default values
@@ -62,44 +76,37 @@ static Arguments parseArguments(const int ac, char *av[])
     return arguments;
 }
 
+static void printHeaderMessage(const Arguments arguments, const struct sockaddr_in remoteAddress)
+{
+    printf("PING %s (%s): %u ", arguments.hostname, inet_ntoa(remoteAddress.sin_addr), ICMP_ECHO_REQUEST_PAYLOAD_SIZE);
+    if (arguments.verbose)
+        printf("(%zu) ", ICMP_ECHO_REQUEST_PAYLOAD_SIZE + sizeof(struct iphdr) + sizeof(struct icmphdr));
+    printf("data bytes\n");
+}
+
 int main(int ac, char *av[])
 {
     if (ac >= 2)
     {
         Arguments arguments = parseArguments(ac, av);
 
-        struct sigaction sa;
-        memset(&sa, 0, sizeof(sa));
-        sa.sa_handler = setCatchedSigint;
-        sigemptyset(&sa.sa_mask);
-        sa.sa_flags = 0;
-        if (sigaction(SIGINT, &sa, NULL) == -1)
-        {
-            perror("sigaction");
-            exit(EXIT_FAILURE);
-        }
+        setSignalHandlerOrExitFailure(setCatchedSigint);
 
         const int rawSockfd = createRawSocketOrExitFailure();
-        const struct sockaddr_in remoteAddress = resolveHostname(arguments.hostname);
+        const struct sockaddr_in remoteAddress = resolveHostnameOrExitFailure(arguments.hostname);
 
-        // Set the TTL for the socket
-        if (setsockopt(rawSockfd, IPPROTO_IP, IP_TTL, &arguments.ttl, sizeof(arguments.ttl)) < 0)
-        {
-            perror("setsockopt");
-            close(rawSockfd);
-            exit(EXIT_FAILURE);
-        }
+        setTtlOrExitFailure(rawSockfd, arguments.ttl);
 
         size_t sequenceNumber = 0;
         Stats stats = {0, 0, 0, INFINITY, 0};
-        printf("PING %s (%s): %zu data bytes\n", arguments.hostname, inet_ntoa(remoteAddress.sin_addr),
-               sizeof(((IcmpEchoRequest *)0)->timestampData) + sizeof(((IcmpEchoRequest *)0)->data));
 
+        printHeaderMessage(arguments, remoteAddress);
         while (!catchedSigint)
         {
             const IcmpEchoRequest icmpEchoRequest = constructIcmpEchoRequest(getpid(), sequenceNumber);
-            sendIcmpEchoRequest(rawSockfd, icmpEchoRequest, remoteAddress);         // -->
-            const IcmpReply icmpReply = receiveIcmpReply(rawSockfd, remoteAddress); // <--
+            sendIcmpEchoRequest(rawSockfd, icmpEchoRequest, remoteAddress);
+            ++sequenceNumber;
+            const IcmpReply icmpReply = receiveIcmpReply(rawSockfd, remoteAddress);
             if (!catchedSigint)
             {
                 if (icmpReply.icmpHeader.type == ICMP_ECHOREPLY)
@@ -116,7 +123,6 @@ int main(int ac, char *av[])
                     printByteAddressToString(icmpReply.ipHeader.saddr);
                     printf(": type=%u code=%u\n", icmpReply.icmpHeader.type, icmpReply.icmpHeader.code);
                 }
-                ++sequenceNumber;
                 sleep(1);
             }
         }

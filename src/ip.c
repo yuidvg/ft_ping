@@ -9,7 +9,7 @@ struct sockaddr_in constructIpHeader(const char *destinationIp)
     return dest_addr;
 }
 
-struct sockaddr_in resolveHostname(const char *hostname)
+struct sockaddr_in resolveHostnameOrExitFailure(const char *hostname)
 {
     struct addrinfo hints;
     struct addrinfo *res;
@@ -37,4 +37,15 @@ void printByteAddressToString(uint32_t address)
     char buffer[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &address, buffer, INET_ADDRSTRLEN);
     printf("%s", buffer);
+}
+
+void setTtlOrExitFailure(int rawSockfd, const uint8_t ttl)
+{
+    // Set the TTL for the socket
+    if (setsockopt(rawSockfd, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0)
+    {
+        perror("setsockopt");
+        close(rawSockfd);
+        exit(EXIT_FAILURE);
+    }
 }
