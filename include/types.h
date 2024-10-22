@@ -1,7 +1,7 @@
 #pragma once
 
 #include "external.h"
-
+#include "values.h"
 typedef struct
 {
     uint8_t type;           // ICMP packet type
@@ -10,7 +10,7 @@ typedef struct
     uint16_t identifier;    // Identifier to match requests and replies
     uint16_t sequence;      // Sequence number to match requests and replies
     uint64_t timestampData; // Payload data
-    uint8_t data[48];       // Payload data
+    uint8_t data[ICMP_ECHO_REQUEST_PAYLOAD_SIZE - ICMP_ECHO_REQUEST_PAYLOAD_TIMESTAMP_SIZE]; // Payload data
     // Followed by data payload (optional)
 } IcmpEchoRequest;
 
