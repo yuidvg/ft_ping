@@ -18,3 +18,4 @@ void printByteAddressToString(uint32_t address);
 ssize_t recvfromOrExitFailure(int sockfd, void *buf, size_t len, int flags, const struct sockaddr_in src_addr);
 uint64_t serializeTimeval(const struct timeval timeval);
 struct timeval deserializeTimeval(const uint64_t timeval);
+void setTtlOrExitFailure(int rawSockfd, const uint8_t ttl);
