@@ -25,3 +25,22 @@ ssize_t recvfromOrExitFailure(int sockfd, void *buf, size_t len, int flags, cons
         exit(EXIT_FAILURE);
     }
 }
+
+bool isReadableOrExitFailure(const int sockfd, struct timeval timeout)
+{
+    fd_set readFdSet;
+    FD_ZERO(&readFdSet);
+    FD_SET(sockfd, &readFdSet);
+    if (timeout.tv_sec < 0 || timeout.tv_usec < 0)
+        timeout.tv_sec = timeout.tv_usec = 0;
+    const int result = select(sockfd + 1, &readFdSet, NULL, NULL, &timeout);
+    if (result > 0)
+        return true;
+    else if (result == 0 || catchedSigint)
+        return false;
+    else
+    {
+        perror("select failed");
+        exit(EXIT_FAILURE);
+    }
+}
