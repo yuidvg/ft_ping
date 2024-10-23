@@ -27,7 +27,8 @@
 		"stdbool.h": "c",
 		"getopt.h": "c",
 		"in.h": "c",
-		"sysexits.h": "c"
+		"sysexits.h": "c",
+		"errqueue.h": "c"
 	},
 	"makefile.configureOnOpen": false,
 }

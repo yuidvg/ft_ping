@@ -11,9 +11,7 @@
             "program": "${workspaceFolder}/ft_ping_debug.out",
             "args": [
                 "-v",
-                "--ttl",
-                "1",
-                "1.1.1.1"
+                "123.123.123.132"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
