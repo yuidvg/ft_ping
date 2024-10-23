@@ -7,6 +7,13 @@ struct timeval timeDifference(const struct timeval start, const struct timeval e
     return result;
 }
 
+struct timeval timeSum(const struct timeval time1, const struct timeval time2)
+{
+    struct timeval result;
+    timeradd(&time1, &time2, &result);
+    return result;
+}
+
 double_t timeValInMiliseconds(const struct timeval timeVal)
 {
     return timeVal.tv_sec * 1000.0 + timeVal.tv_usec / 1000.0;

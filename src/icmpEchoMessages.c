@@ -25,7 +25,7 @@ void sendIcmpEchoRequest(int rawSockfd, const IcmpEchoRequest icmpEchoRequest, s
     }
 }
 
-IcmpReply receiveIcmpReply(int rawSockfd, const struct sockaddr_in remoteAddress)
+IcmpReply receiveIcmpReplyOrExitFailure(int rawSockfd, struct sockaddr_in remoteAddress)
 {
     IcmpReply icmpReply;
 

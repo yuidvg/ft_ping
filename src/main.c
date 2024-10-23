@@ -106,22 +106,27 @@ int main(int ac, char *av[])
             const IcmpEchoRequest icmpEchoRequest = constructIcmpEchoRequest(getpid(), sequenceNumber);
             sendIcmpEchoRequest(rawSockfd, icmpEchoRequest, remoteAddress);
             ++sequenceNumber;
-            const IcmpReply icmpReply = receiveIcmpReply(rawSockfd, remoteAddress);
-            if (!catchedSigint)
+            const struct timeval lastSent = timeOfDay();
+            while (isReadableOrExitFailure(rawSockfd, timeDifference(timeOfDay(), timeSum(lastSent, DEFAULT_INTERVAL))))
             {
+                const IcmpReply icmpReply = receiveIcmpReplyOrExitFailure(rawSockfd, remoteAddress);
+                if (icmpReply.bytesReceived > 0)
+            {
+                    // Process the received ICMP packet
                 if (icmpReply.icmpHeader.type == ICMP_ECHOREPLY)
                 {
                     stats = getUpdatedStats(stats, icmpReply.rtt);
-                    printf("%lu bytes from ", icmpReply.bytesReceived - sizeof(((IcmpReply *)0)->ipHeader));
+                        printf("%lu bytes from ", icmpReply.bytesReceived - sizeof(struct iphdr));
                     printByteAddressToString(icmpReply.ipHeader.saddr);
                     printf(": icmp_seq=%u ttl=%d time=%.3f ms\n", icmpReply.icmpHeader.un.echo.sequence,
                            icmpReply.ipHeader.ttl, icmpReply.rtt);
                 }
                 else if (arguments.verbose)
                 {
-                    printf("%lu bytes from ", icmpReply.bytesReceived - sizeof(((IcmpReply *)0)->ipHeader));
+                        printf("%lu bytes from ", icmpReply.bytesReceived - sizeof(struct iphdr));
                     printByteAddressToString(icmpReply.ipHeader.saddr);
                     printf(": type=%u code=%u\n", icmpReply.icmpHeader.type, icmpReply.icmpHeader.code);
+                    }
                 }
                 sleep(1);
             }
