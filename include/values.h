@@ -2,13 +2,10 @@
 
 #define BYTE 8
 #define DEFAULT_TTL 60
+#define PING_MAX_DATALEN (65535 - MAXIPLEN - MAXICMPLEN)
 
 extern volatile sig_atomic_t catchedSigint;
 
 #define ICMP_ECHO_REQUEST_PAYLOAD_SIZE 56
 #define ICMP_ECHO_REQUEST_PAYLOAD_TIMESTAMP_SIZE 8
-#define DEFAULT_INTERVAL                                                                                               \
-    (struct timeval)                                                                                                   \
-    {                                                                                                                  \
-        .tv_sec = 1                                                                                                    \
-    }
+#define DEFAULT_INTERVAL (struct timeval){.tv_sec = 1}

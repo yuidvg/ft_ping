@@ -9,7 +9,7 @@ typedef struct
     uint16_t checksum;      // Checksum of the ICMP header and data
     uint16_t identifier;    // Identifier to match requests and replies
     uint16_t sequence;      // Sequence number to match requests and replies
-    uint64_t timestampData; // Payload data
+    struct timeval timestampData; // Payload data
     uint8_t data[ICMP_ECHO_REQUEST_PAYLOAD_SIZE - ICMP_ECHO_REQUEST_PAYLOAD_TIMESTAMP_SIZE]; // Payload data
     // Followed by data payload (optional)
 } IcmpEchoRequest;
