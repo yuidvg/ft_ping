@@ -3,20 +3,18 @@
 #include "types.h"
 
 // Socket
-IcmpEchoRequest constructIcmpEchoRequest(uint16_t id, uint16_t sequenceNumber);
+IcmpEchoRequest constructIcmpEchoRequest(uint16_t id, uint16_t sequenceNumber, char *padPattern, size_t padPatternLen, size_t dataLen);
 int createRawSocketOrExitFailure();
 bool isReadableOrExitFailure(const int sockfd, const struct timeval timeout);
 
 // Checksum
-uint16_t calculateChecksum(void *data, int length);
+uint16_t calculateChecksum(void *data, size_t length);
 
 // Time
 struct timeval timeDifference(const struct timeval start, const struct timeval end);
 struct timeval timeSum(const struct timeval time1, const struct timeval time2);
 double_t timeValInMiliseconds(const struct timeval timeVal);
 struct timeval timeOfDay();
-uint64_t serializeTimeval(const struct timeval timeval);
-struct timeval deserializeTimeval(const uint64_t timeval);
 
 // IP
 struct sockaddr_in constructIpHeader(const char *destinationIp);

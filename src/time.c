@@ -25,16 +25,3 @@ struct timeval timeOfDay()
     gettimeofday(&time, NULL);
     return time;
 }
-
-uint64_t serializeTimeval(const struct timeval timeval)
-{
-    return ((uint64_t)timeval.tv_sec << 32) | (uint64_t)timeval.tv_usec;
-}
-
-struct timeval deserializeTimeval(const uint64_t timeval)
-{
-    struct timeval result;
-    result.tv_sec = (time_t)(timeval >> 32);
-    result.tv_usec = (suseconds_t)(timeval & 0xFFFFFFFF);
-    return result;
-}

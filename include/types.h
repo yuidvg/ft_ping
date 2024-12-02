@@ -4,14 +4,9 @@
 #include "values.h"
 typedef struct
 {
-    uint8_t type;           // ICMP packet type
-    uint8_t code;           // Type sub code
-    uint16_t checksum;      // Checksum of the ICMP header and data
-    uint16_t identifier;    // Identifier to match requests and replies
-    uint16_t sequence;      // Sequence number to match requests and replies
-    struct timeval timestampData; // Payload data
-    uint8_t data[ICMP_ECHO_REQUEST_PAYLOAD_SIZE - ICMP_ECHO_REQUEST_PAYLOAD_TIMESTAMP_SIZE]; // Payload data
-    // Followed by data payload (optional)
+    struct icmphdr icmpHeader;
+    uint8_t data[PAYLOAD_SIZE_MAX]; // Payload data
+    size_t dataLen; // Data length
 } IcmpEchoRequest;
 
 typedef struct
@@ -37,4 +32,9 @@ typedef struct
     bool verbose;   // -v option for verbose output
     size_t ttl;     // --ttl option for time to live
     char *hostname; // Hostname to ping
+    char padPattern[PADDING_PATTERN_SIZE_MAX]; // Padding pattern
+    size_t padPatternLen; // Padding pattern length
+    size_t dataLen;   // Data length
+    size_t secondsToRun; // Stop after n packets
+    bool numericOutputOnly; // -n option for numeric output only
 } Arguments;

@@ -1,6 +1,6 @@
 #include "../include/all.h"
 
-uint16_t calculateChecksum(void *data, int length)
+uint16_t calculateChecksum(void *data, size_t length)
 {
     uint16_t *buf = data;
     uint32_t sum = 0;

@@ -1,23 +1,78 @@
 #include "../include/all.h"
 
-IcmpEchoRequest constructIcmpEchoRequest(uint16_t id, uint16_t sequenceNumber)
+static void setPaddings(uint8_t *payload, size_t dataLen, char *padPattern, size_t padPatternLen)
+{
+
+    if (padPattern)
+    {
+        size_t indexOnAByteInPadPattern = 0;
+        for (uint8_t *pointerToAByteInPayload = payload; pointerToAByteInPayload < payload + dataLen;
+             pointerToAByteInPayload++)
+        {
+            *pointerToAByteInPayload = padPattern[indexOnAByteInPadPattern];
+            if (++indexOnAByteInPadPattern >= padPatternLen)
+                indexOnAByteInPadPattern = 0;
+        }
+    }
+    else
+    {
+        size_t indexOnAByteInPayload = 0;
+        for (uint8_t *pointerToAByteInPayload = payload; pointerToAByteInPayload < payload + dataLen;
+             pointerToAByteInPayload++)
+            *pointerToAByteInPayload = indexOnAByteInPayload++;
+    }
+}
+
+IcmpEchoRequest constructIcmpEchoRequest(uint16_t id, uint16_t sequenceNumber, char *padPattern, size_t padPatternLen,
+                                         size_t dataLen)
 {
     IcmpEchoRequest icmpEchoRequest;
-    icmpEchoRequest.type = 8;
-    icmpEchoRequest.code = 0;
-    icmpEchoRequest.checksum = 0;
-    icmpEchoRequest.identifier = id;
-    icmpEchoRequest.sequence = sequenceNumber;
-    icmpEchoRequest.timestampData = serializeTimeval(timeOfDay());
-    memset(icmpEchoRequest.data, 0, sizeof(icmpEchoRequest.data));
-    icmpEchoRequest.checksum = calculateChecksum(&icmpEchoRequest, sizeof(icmpEchoRequest));
+    icmpEchoRequest.icmpHeader.type = 8;
+    icmpEchoRequest.icmpHeader.code = 0;
+    icmpEchoRequest.icmpHeader.checksum = 0;
+    icmpEchoRequest.icmpHeader.un.echo.id = id;
+    icmpEchoRequest.icmpHeader.un.echo.sequence = sequenceNumber;
+    icmpEchoRequest.dataLen = dataLen;
+    if (icmpEchoRequest.dataLen >= sizeof(struct timeval))
+    {
+        const struct timeval timeSent = timeOfDay();
+        memcpy(icmpEchoRequest.data, &timeSent, sizeof(struct timeval));
+        setPaddings(icmpEchoRequest.data + sizeof(struct timeval), icmpEchoRequest.dataLen - sizeof(struct timeval),
+                    padPattern, padPatternLen);
+    }
+    else
+        setPaddings(icmpEchoRequest.data, icmpEchoRequest.dataLen, padPattern, padPatternLen);
     return icmpEchoRequest;
+}
+
+static void encodeIcmpEchoRequest(IcmpEchoRequest icmpEchoRequest, char *buffer)
+{
+    const uint16_t temporaryChecksum = 0;
+    buffer[0] = icmpEchoRequest.icmpHeader.type;
+    buffer[1] = icmpEchoRequest.icmpHeader.code;
+
+    buffer[2] = (temporaryChecksum >> 8) & 0xFF;
+    buffer[3] = temporaryChecksum & 0xFF;
+
+    buffer[4] = (icmpEchoRequest.icmpHeader.un.echo.id >> 8) & 0xFF;
+    buffer[5] = icmpEchoRequest.icmpHeader.un.echo.id & 0xFF;
+
+    buffer[6] = (icmpEchoRequest.icmpHeader.un.echo.sequence >> 8) & 0xFF;
+    buffer[7] = icmpEchoRequest.icmpHeader.un.echo.sequence & 0xFF;
+
+    /* Copy data */
+    memcpy(buffer + 8, icmpEchoRequest.data, icmpEchoRequest.dataLen);
+    const uint16_t checksum = calculateChecksum(buffer, icmpEchoRequest.dataLen + 8);
+    buffer[3] = (checksum >> 8) & 0xFF;
+    buffer[2] = checksum & 0xFF;
 }
 
 void sendIcmpEchoRequest(int rawSockfd, const IcmpEchoRequest icmpEchoRequest, struct sockaddr_in destAddress)
 {
-    if (sendto(rawSockfd, &icmpEchoRequest, sizeof(icmpEchoRequest), 0, (struct sockaddr *)&destAddress,
-               sizeof(destAddress)) <= 0)
+    char buffer[PAYLOAD_SIZE_MAX + sizeof(struct icmphdr)];
+    encodeIcmpEchoRequest(icmpEchoRequest, buffer);
+    if (sendto(rawSockfd, buffer, icmpEchoRequest.dataLen + ICMP_ECHO_REQUEST_HEADER_SIZE, 0,
+               (struct sockaddr *)&destAddress, sizeof(destAddress)) <= 0)
     {
         perror("sendto");
         close(rawSockfd);
@@ -43,8 +98,11 @@ IcmpReply receiveIcmpReplyOrExitFailure(int rawSockfd, struct sockaddr_in remote
 
         if (icmpReply.icmpHeader.type == ICMP_ECHOREPLY)
         {
-            uint64_t data = *(uint64_t *)(buffer + sizeof(struct iphdr) + sizeof(struct icmphdr));
-            icmpReply.rtt = timeValInMiliseconds(timeDifference(deserializeTimeval(data), timeReceived));
+            uint8_t *data = (uint8_t *)(buffer + sizeof(struct iphdr) + sizeof(struct icmphdr));
+            if (icmpReply.bytesReceived >= sizeof(struct timeval) + sizeof(struct iphdr) + sizeof(struct icmphdr))
+                icmpReply.rtt = timeValInMiliseconds(timeDifference(*(struct timeval *)data, timeReceived));
+            else
+                icmpReply.rtt = NAN;
         }
         return icmpReply;
     }

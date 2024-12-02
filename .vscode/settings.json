@@ -28,7 +28,22 @@
 		"getopt.h": "c",
 		"in.h": "c",
 		"sysexits.h": "c",
-		"errqueue.h": "c"
+		"errqueue.h": "c",
+		"limits.h": "c",
+		"array": "c",
+		"chrono": "c",
+		"compare": "c",
+		"executor": "c",
+		"internet": "c",
+		"functional": "c",
+		"istream": "c",
+		"ostream": "c",
+		"ranges": "c",
+		"ratio": "c",
+		"tuple": "c",
+		"type_traits": "c",
+		"utility": "c",
+		"thread": "c"
 	},
 	"makefile.configureOnOpen": false,
 }

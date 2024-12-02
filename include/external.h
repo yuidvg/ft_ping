@@ -19,6 +19,8 @@
 #include <sys/types.h>
 #include <sysexits.h>
 #include <unistd.h>
+#include <netinet/ip_icmp.h>
+#include <limits.h>
 
 extern char *optarg;
 extern int optind, opterr, optopt;
