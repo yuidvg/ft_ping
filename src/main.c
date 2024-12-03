@@ -2,9 +2,8 @@
 
 volatile sig_atomic_t catchedSigint = 0;
 
-static void setCatchedSigint(const int sig)
+static void setCatchedSigint(const int sig __attribute__((unused)))
 {
-    (void)sig;
     catchedSigint = 1;
 }
 
@@ -179,7 +178,9 @@ int main(int ac, char *av[])
             sendIcmpEchoRequest(rawSockfd, icmpEchoRequest, remoteAddress);
             ++sequenceNumber;
             const struct timeval lastSent = timeOfDay();
-            while (isReadableOrExitFailure(rawSockfd, timeDifference(timeOfDay(), timeSum(lastSent, DEFAULT_INTERVAL))))
+            while (
+                isReadableOrExitFailure(rawSockfd, timeDifference(timeOfDay(), timeSum(lastSent, DEFAULT_INTERVAL))) &&
+                !catchedSigint)
             {
                 const IcmpReply icmpReply = receiveIcmpReplyOrExitFailure(rawSockfd, remoteAddress);
                 if (!catchedSigint)
@@ -198,11 +199,19 @@ int main(int ac, char *av[])
                             else
                                 printf("\n");
                         }
-                        else if (arguments.verbose)
+                        else
                         {
                             printf("%lu bytes from ", icmpReply.bytesReceived - sizeof(struct iphdr));
                             printByteAddressToString(icmpReply.ipHeader.saddr);
-                            printf(": type=%u code=%u\n", icmpReply.icmpHeader.type, icmpReply.icmpHeader.code);
+                            if (arguments.verbose)
+                            {
+                                printf(": type=%u code=%u\n", icmpReply.icmpHeader.type, icmpReply.icmpHeader.code);
+                            }
+                            else
+                            {
+                                printf(": ");
+                                printIcmpCodeDescriptions(icmpReply.icmpHeader.type, icmpReply.icmpHeader.code);
+                            }
                         }
                     }
                 }

@@ -3,7 +3,8 @@
 #include "types.h"
 
 // Socket
-IcmpEchoRequest constructIcmpEchoRequest(uint16_t id, uint16_t sequenceNumber, char *padPattern, size_t padPatternLen, size_t dataLen);
+IcmpEchoRequest constructIcmpEchoRequest(uint16_t id, uint16_t sequenceNumber, char *padPattern, size_t padPatternLen,
+                                         size_t dataLen);
 int createRawSocketOrExitFailure();
 bool isReadableOrExitFailure(const int sockfd, const struct timeval timeout);
 
@@ -26,7 +27,7 @@ void printByteAddressToString(uint32_t address);
 void sendIcmpEchoRequest(int rawSockfd, const IcmpEchoRequest icmpEchoRequest, struct sockaddr_in remoteAddress);
 IcmpReply receiveIcmpReplyOrExitFailure(int rawSockfd, struct sockaddr_in remoteAddress);
 ssize_t recvfromOrExitFailure(int sockfd, void *buf, size_t len, int flags, struct sockaddr_in src_addr);
+void printIcmpCodeDescriptions(int type, int code);
 
 // Stats
 Stats getUpdatedStats(Stats stats, const double_t rtt);
-

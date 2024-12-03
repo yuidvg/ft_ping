@@ -1,5 +1,7 @@
 #include "../include/all.h"
 
+// Send
+
 static void setPaddings(uint8_t *payload, size_t dataLen, char *padPattern, size_t padPatternLen)
 {
 
@@ -80,6 +82,8 @@ void sendIcmpEchoRequest(int rawSockfd, const IcmpEchoRequest icmpEchoRequest, s
     }
 }
 
+// Receive
+
 IcmpReply receiveIcmpReplyOrExitFailure(int rawSockfd, struct sockaddr_in remoteAddress)
 {
     IcmpReply icmpReply;
@@ -108,4 +112,41 @@ IcmpReply receiveIcmpReplyOrExitFailure(int rawSockfd, struct sockaddr_in remote
     }
     else
         return (IcmpReply){0};
+}
+
+void printIcmpCodeDescriptions(int type, int code)
+{
+
+    const struct icmpCodeDescriptions
+    {
+        int type;
+        int code;
+        char *description;
+    } ICMP_CODE_DESCRIPTIONS[] = {{ICMP_DEST_UNREACH, ICMP_NET_UNREACH, "Destination Net Unreachable"},
+                                  {ICMP_DEST_UNREACH, ICMP_HOST_UNREACH, "Destination Host Unreachable"},
+                                  {ICMP_DEST_UNREACH, ICMP_PROT_UNREACH, "Destination Protocol Unreachable"},
+                                  {ICMP_DEST_UNREACH, ICMP_PORT_UNREACH, "Destination Port Unreachable"},
+                                  {ICMP_DEST_UNREACH, ICMP_FRAG_NEEDED, "Fragmentation needed and DF set"},
+                                  {ICMP_DEST_UNREACH, ICMP_SR_FAILED, "Source Route Failed"},
+                                  {ICMP_DEST_UNREACH, ICMP_NET_UNKNOWN, "Network Unknown"},
+                                  {ICMP_DEST_UNREACH, ICMP_HOST_UNKNOWN, "Host Unknown"},
+                                  {ICMP_DEST_UNREACH, ICMP_HOST_ISOLATED, "Host Isolated"},
+                                  {ICMP_DEST_UNREACH, ICMP_NET_UNR_TOS, "Destination Network Unreachable At This TOS"},
+                                  {ICMP_DEST_UNREACH, ICMP_HOST_UNR_TOS, "Destination Host Unreachable At This TOS"},
+                                  {ICMP_REDIRECT, ICMP_REDIR_NET, "Redirect Network"},
+                                  {ICMP_REDIRECT, ICMP_REDIR_HOST, "Redirect Host"},
+                                  {ICMP_REDIRECT, ICMP_REDIR_NETTOS, "Redirect Type of Service and Network"},
+                                  {ICMP_REDIRECT, ICMP_REDIR_HOSTTOS, "Redirect Type of Service and Host"},
+                                  {ICMP_TIME_EXCEEDED, ICMP_EXC_TTL, "Time to live exceeded"},
+                                  {ICMP_TIME_EXCEEDED, ICMP_EXC_FRAGTIME, "Frag reassembly time exceeded"}};
+
+    for (const struct icmpCodeDescriptions *p = ICMP_CODE_DESCRIPTIONS;
+         p < ICMP_CODE_DESCRIPTIONS + NUMBER_OF_ITEMS(ICMP_CODE_DESCRIPTIONS); p++)
+        if (p->type == type && p->code == code)
+        {
+            printf("%s\n", p->description);
+            return;
+        }
+
+    printf("Unknown Code: %d\n", code);
 }
