@@ -17,7 +17,7 @@ static void printConclusion(const char *hostname, const size_t packetsTransmitte
     printf("--- %s ft_ping statistics ---\n"
            "%zu packets transmitted, %zu packets received, %.0f%% packet loss\n",
            hostname, packetsTransmitted, packetsReceived, packetLoss);
-    if (packetsReceived > 0)
+    if (packetsReceived > 0 && !isnan(stats.mean))
         printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n", stats.min, stats.mean, stats.max, stddev);
     exit(0);
 }
@@ -63,17 +63,17 @@ static size_t parseNumber(const char *optarg, size_t maxval, bool allowZero)
         n = strtoul(optarg, &p, 0);
         if (*p)
         {
-            fprintf(stderr, "invalid value (`%s' near `%s')", optarg, p);
+            fprintf(stderr, "invalid value (`%s' near `%s')\n", optarg, p);
             exit(EXIT_FAILURE);
         }
         if (n == 0 && !allowZero)
         {
-            fprintf(stderr, "option value too small: %s", optarg);
+            fprintf(stderr, "option value too small: %s\n", optarg);
             exit(EXIT_FAILURE);
         }
         if (maxval && n > maxval)
         {
-            fprintf(stderr, "option value too big: %s", optarg);
+            fprintf(stderr, "option value too big: %s\n", optarg);
             exit(EXIT_FAILURE);
         }
         return n;
