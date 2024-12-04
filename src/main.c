@@ -44,7 +44,7 @@ static size_t parsePattern(const char *text, char *pattern_data)
     {
         if (sscanf(text, "%2x%n", &c, &off) != 1)
         {
-            fprintf(stderr, "error in pattern near %s", text);
+            fprintf(stderr, "ft_ping: error in pattern near %s", text);
             exit(EXIT_FAILURE);
         }
         text += off;
@@ -62,17 +62,17 @@ static size_t parseNumber(const char *optarg, size_t maxval, bool allowZero)
         n = strtoul(optarg, &p, 0);
         if (*p)
         {
-            fprintf(stderr, "invalid value (`%s' near `%s')\n", optarg, p);
+            fprintf(stderr, "ft_ping: invalid value (`%s' near `%s')\n", optarg, p);
             exit(EXIT_FAILURE);
         }
         if (n == 0 && !allowZero)
         {
-            fprintf(stderr, "option value too small: %s\n", optarg);
+            fprintf(stderr, "ft_ping: option value too small: %s\n", optarg);
             exit(EXIT_FAILURE);
         }
         if (maxval && n > maxval)
         {
-            fprintf(stderr, "option value too big: %s\n", optarg);
+            fprintf(stderr, "ft_ping: option value too big: %s\n", optarg);
             exit(EXIT_FAILURE);
         }
         return n;
@@ -94,25 +94,37 @@ static Arguments parseArguments(const int ac, char *av[])
                            .numericOutputOnly = false}; // Default values
     int opt;
     const struct option longOptions[] = {{"ttl", required_argument, NULL, 't'}, {NULL, 0, NULL, 0}};
-    while ((opt = getopt_long(ac, av, "v?np:w:s:", longOptions, &optind)) != -1)
+    while ((opt = getopt_long(ac, av, ":v?np:w:s:", longOptions, &optind)) != -1)
     {
         switch (opt)
         {
+        case ':':
+            fprintf(stderr, "ft_ping: option requires an argument -- '%c'\nTry 'ft_ping -?' for more information.\n",
+                    optopt);
+            exit(EX_USAGE);
         case 'v':
             arguments.verbose = true;
             break;
         case '?':
-            printf("Usage: ft_ping [OPTION...] HOST ...\n"
-                   "Send ICMP ECHO_REQUEST packets to network hosts.\n\n"
-                   "Options:\n"
-                   "  --ttl=N\tspecify N as time-to-live\n"
-                   "  -v\t\tverbose output\n"
-                   "  -?\t\tgive this help list\n"
-                   "  -n\t\tdo not resolve host addresses\n"
-                   "  -p=PATTERN\t\tfill ICMP packet with given pattern (hex)\n"
-                   "  -w=N\t\tstop after N seconds\n"
-                   "  -s=NUMBER\t\tsend NUMBER data octets\n");
-            exit(EX_OK);
+            if (optopt)
+            {
+                fprintf(stderr, "ft_ping: invalid option -- '%c'\nTry 'ft_ping -?' for more information.\n", optopt);
+                exit(EX_USAGE);
+            }
+            else
+            {
+                printf("Usage: ft_ping [OPTION...] HOST\n"
+                       "Send ICMP ECHO_REQUEST packets to a network host.\n\n"
+                       "Options:\n"
+                       "  --ttl=N\t\tspecify N as time-to-live\n"
+                       "  -v\t\t\tverbose output\n"
+                       "  -?\t\t\tgive this help list\n"
+                       "  -n\t\t\tdo not resolve host addresses\n"
+                       "  -p=PATTERN\t\tfill ICMP packet with given pattern (hex)\n"
+                       "  -w=N\t\t\tstop after N seconds\n"
+                       "  -s=NUMBER\t\tsend NUMBER data octets\n");
+                exit(EX_OK);
+            }
         case 't':
             arguments.ttl = parseNumber(optarg, UINT8_MAX, false);
             break;
@@ -149,7 +161,7 @@ static void printHeaderMessage(const Arguments arguments, const struct sockaddr_
 {
     printf("PING %s (%s): %zu ", arguments.hostname, inet_ntoa(remoteAddress.sin_addr), arguments.dataLen);
     if (arguments.verbose)
-        printf("(%zu) ", arguments.dataLen + sizeof(struct iphdr) + sizeof(struct icmphdr));
+        printf("(%zu) ", arguments.dataLen + sizeof(struct iphdr) + ICMP_ECHO_REQUEST_HEADER_SIZE);
     printf("data bytes\n");
 }
 

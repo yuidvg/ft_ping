@@ -71,7 +71,7 @@ static void encodeIcmpEchoRequest(IcmpEchoRequest icmpEchoRequest, char *buffer)
 
 void sendIcmpEchoRequest(int rawSockfd, const IcmpEchoRequest icmpEchoRequest, struct sockaddr_in destAddress)
 {
-    char buffer[PAYLOAD_SIZE_MAX + sizeof(struct icmphdr)];
+    char buffer[PAYLOAD_SIZE_MAX + ICMP_ECHO_REQUEST_HEADER_SIZE];
     encodeIcmpEchoRequest(icmpEchoRequest, buffer);
     if (sendto(rawSockfd, buffer, icmpEchoRequest.dataLen + ICMP_ECHO_REQUEST_HEADER_SIZE, 0,
                (struct sockaddr *)&destAddress, sizeof(destAddress)) <= 0)

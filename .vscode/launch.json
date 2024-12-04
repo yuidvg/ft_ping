@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/ft_ping_debug.out",
             "args": [
-                "1.1.1.1"
+                "-?"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
